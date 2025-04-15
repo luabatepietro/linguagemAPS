@@ -89,3 +89,5 @@ Cada entidade mitológica é representada usando combinações dos tipos básico
     }
 }
 ```
+
+read.ME feito com ajuda do chatt-GPT
