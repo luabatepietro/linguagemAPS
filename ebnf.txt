@@ -1,0 +1,53 @@
+PROGRAMA         = "{", { DECLARACAO | COMANDO | ";" }, "}" ;
+
+DECLARACAO       = "criar", ID, "como", TIPO, [ "com", EXPRESSAO ], ";" ;
+
+TIPO             = "poder" | "texto" | "destino" ;
+
+COMANDO          = ATRIBUICAO
+                 | NARRATIVA
+                 | CONDICAO
+                 | CICLO ;
+
+ATRIBUICAO       = ID, "recebe", EXPRESSAO, ";" ;
+
+NARRATIVA        = "contar", "(", EXPRESSAO, ")", ";" ;
+
+CONDICAO         = "quando", "(", EXPRESSAO, ")", BLOCO, [ "senao", BLOCO ] ;
+
+CICLO            = "enquanto", "(", EXPRESSAO, ")", BLOCO ;
+
+BLOCO            = "{", { COMANDO | DECLARACAO | ";" }, "}" ;
+
+EXPRESSAO        = EXPRESSAO_LOGICA ;
+
+EXPRESSAO_LOGICA = EXPRESSAO_RELACIONAL, { ("e" | "ou"), EXPRESSAO_RELACIONAL } ;
+
+EXPRESSAO_RELACIONAL = EXPRESSAO_ARITMETICA, [ OPERADOR_RELACIONAL, EXPRESSAO_ARITMETICA ] ;
+
+OPERADOR_RELACIONAL  = "==" | "!=" | "supera" | "cede" ;
+
+EXPRESSAO_ARITMETICA = TERMO, { ("unir" | "separar"), TERMO } ;
+
+TERMO            = FATOR, { ("fortificar" | "enfraquecer"), FATOR } ;
+
+FATOR            = [ ("bênção" | "maldição") ], ELEMENTO ;
+
+ELEMENTO         = ID
+                 | NUM
+                 | STR
+                 | BOOL
+                 | "consultar", "(", ")" 
+                 | "(", EXPRESSAO, ")" ;
+
+ID               = letra, { letra | "_" | digito } ;
+
+NUM              = ["-"], digito, { digito } ;
+
+STR              = '"', { caractere }, '"' ;
+
+BOOL             = "verdadeiro" | "falso" ;
+
+letra            = "a" | ... | "z" | "A" | ... | "Z" ;
+
+digito           = "0" | ... | "9" ;
