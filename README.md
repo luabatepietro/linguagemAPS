@@ -1,93 +1,96 @@
 # Linguagem Mitológica
 
-Uma linguagem de programação temática baseada na mitologia grega, onde cada elemento de programação é representado por conceitos mitológicos, permitindo a criação de narrativas mitológicas interativas.
+Uma linguagem de programação inspirada na mitologia grega, onde escrever código é também narrar o desenrolar de uma nova lenda.
 
-## Elementos da Linguagem
+## Tipos de Essências
 
-### Tipos de Dados Básicos
+| Mitologia | Tipo Tradicional | Significado                        |
+| --------- | ---------------- | ---------------------------------- |
+| `poder`   | `int`            | Força vital, energia ou magia      |
+| `palavra` | `str`            | Nomeações, mensagens ou invocações |
+| `destino` | `bool`           | Verdades e vontades (sim/não)      |
 
-| Linguagem Mitológica | Python | Descrição                                          |
-| -------------------- | ------ | -------------------------------------------------- |
-| `poder`              | `int`  | Representa valores numéricos (poder, força, nível) |
-| `texto`              | `str`  | Representa strings (nomes, descrições, mensagens)  |
-| `destino`            | `bool` | Representa estados booleanos (verdadeiro/falso)    |
+---
 
-### Representação de Entidades Mitológicas
+## Entidades do Mundo
 
-Cada entidade mitológica é representada usando combinações dos tipos básicos:
+- **Heróis, Deuses e Criaturas**:
 
-1. **Herói/Deus/Criatura**:
+  - `poder` → Força do ser
+  - `palavra` → Nome eterno
+  - `destino` → Existência ou ruína
 
-   - `poder` para força/habilidade
-   - `texto` para nome
-   - `destino` para estado (vivo/morto, ativo/inativo)
+- **Artefatos Sagrados ou Locais Místicos**:
 
-2. **Artefato/Local**:
+  - `palavra` → Nome ou descrição
+  - `poder` → Potência mágica
 
-   - `texto` para nome e descrição
-   - `poder` para nível de magia/importância
+- **Eventos do Tecido do Destino**:
+  - `palavra` → Descrição do evento
+  - `destino` → Se ocorreu
+  - `poder` → Intensidade do impacto
 
-3. **Evento**:
-   - `texto` para descrição
-   - `destino` para ocorreu/não ocorreu
-   - `poder` para impacto/consequências
+---
 
-### Comandos (Funções em Python)
+## Feitiços (Comandos)
 
-| Linguagem Mitológica | Python                  | Descrição                                                 |
-| -------------------- | ----------------------- | --------------------------------------------------------- |
-| `criar`              | `def criar_entidade():` | Declara uma nova entidade mitológica usando tipos básicos |
-| `contar`             | `print()`               | Exibe texto na narrativa                                  |
-| `quando`             | `if/else`               | Estrutura condicional para momentos decisivos             |
-| `enquanto`           | `while`                 | Estrutura de repetição para criar tensão                  |
-| `consultar`          | `input()`               | Recebe entrada do usuário                                 |
+| Palavra Mitológica  | Ação Tradicional | Propósito                                           |
+| ------------------- | ---------------- | --------------------------------------------------- |
+| `invocar`           | `def`            | Dá existência a uma nova entidade ou elemento       |
+| `proclamar`         | `print`          | Narra palavras aos deuses e mortais                 |
+| `se`                | `if/else`        | Escolhas no entrelaçar dos destinos                 |
+| `enquanto`          | `while`          | Repetição eterna enquanto a vontade divina permitir |
+| `consultar_oraculo` | `input()`        | Busca respostas do além                             |
 
-### Operadores (Operadores em Python)
+---
 
-| Linguagem Mitológica | Python | Descrição                                        |
-| -------------------- | ------ | ------------------------------------------------ |
-| `supera`             | `>`    | Comparação "maior que" para `poder`              |
-| `cede`               | `<`    | Comparação "menor que" para `poder`              |
-| `unir`               | `+`    | Adição para `poder` ou concatenação para `texto` |
-| `separar`            | `-`    | Subtração para `poder`                           |
-| `fortificar`         | `*`    | Multiplicação para `poder`                       |
-| `enfraquecer`        | `/`    | Divisão para `poder`                             |
-| `bênção`             | `+`    | Sinal positivo para `poder`                      |
-| `maldição`           | `-`    | Sinal negativo para `poder`                      |
-| `e`                  | `and`  | Operador lógico AND para `destino`               |
-| `ou`                 | `or`   | Operador lógico OR para `destino`                |
+## Forças e Conflitos (Operadores)
 
-## Exemplo de Código
+| Palavra Mitológica | Símbolo | Significado                   |
+| ------------------ | ------- | ----------------------------- |
+| `supera`           | `>`     | Um poder é maior que outro    |
+| `cede`             | `<`     | Um poder é menor que outro    |
+| `unir`             | `+`     | Juntar forças ou palavras     |
+| `separar`          | `-`     | Diluir forças                 |
+| `fortificar`       | `*`     | Multiplicar forças            |
+| `enfraquecer`      | `/`     | Dividir forças                |
+| `e`                | `and`   | Ambos destinos se cumprem     |
+| `ou`               | `or`    | Um ou outro destino se cumpre |
+
+---
+
+## Exemplo de Código: A Jornada de Perseu
 
 ```myth
 {
-    # Criando um herói usando tipos básicos
-    criar forca_perseu como poder com 100;  # Equivalente a: forca_perseu = 100
-    criar nome_perseu como texto com "Perseu";  # Equivalente a: nome_perseu = "Perseu"
-    criar vivo_perseu como destino com verdadeiro;  # Equivalente a: vivo_perseu = True
+    # Perseu surge ao mundo
+    invocar forca_perseu como poder com 100;
+    invocar nome_perseu como palavra com "Perseu";
+    invocar vivo_perseu como destino com verdadeiro;
 
-    # Criando uma criatura
-    criar forca_medusa como poder com 80;
-    criar nome_medusa como texto com "Medusa";
-    criar viva_medusa como destino com verdadeiro;
+    # Nasce sua inimiga, Medusa
+    invocar forca_medusa como poder com 80;
+    invocar nome_medusa como palavra com "Medusa";
+    invocar viva_medusa como destino com verdadeiro;
 
-    # Criando um artefato
-    criar nome_espada como texto com "Espada de Hermes";
-    criar poder_espada como poder com 50;
+    # Forjado nas estrelas, uma arma é entregue
+    invocar nome_espada como palavra com "Espada de Hermes";
+    invocar poder_espada como poder com 50;
 
-    contar("No início dos tempos...");  # Equivalente a: print("No início dos tempos...")
+    # O oráculo proclama o início
+    proclamar("No início dos tempos, heróis e monstros despertaram...");
 
-    quando (forca_perseu supera 50) {  # Equivalente a: if forca_perseu > 50:
-        contar("Perseu recebeu a bênção dos deuses");
-        forca_perseu recebe forca_perseu fortificar 2;  # Equivalente a: forca_perseu *= 2
+    # Se Perseu mostrar grande poder
+    se (forca_perseu supera 50) {
+        proclamar("Perseu recebeu a bênção dos deuses!");
+        forca_perseu recebe forca_perseu fortificar 2;
     }
 
-    enquanto (viva_medusa == verdadeiro e forca_medusa cede forca_perseu) {
-        contar("A batalha se intensifica");
-        forca_perseu recebe forca_perseu unir 10;  # Equivalente a: forca_perseu += 10
-        forca_medusa recebe forca_medusa enfraquecer 2;  # Equivalente a: forca_medusa /= 2
+    # Enquanto Medusa respira e é fraca diante de Perseu
+    enquanto (viva_medusa e (forca_medusa cede forca_perseu)) {
+        proclamar("A batalha entre Perseu e Medusa ecoa pelos tempos!");
+        forca_perseu recebe forca_perseu unir 10;
+        forca_medusa recebe forca_medusa enfraquecer 2;
     }
 }
 ```
-
-read.ME feito com ajuda do chatt-GPT
