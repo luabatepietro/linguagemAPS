@@ -1,23 +1,20 @@
-PROGRAMA         = "{", { DECLARACAO | COMANDO | ";" }, "}" ;
+PROGRAMA         = "{", { DECLARACAO | COMANDO }, "}" ;
 
-DECLARACAO       = "invocar", ID, "como", TIPO, "com", EXPRESSAO, ";" ;
+DECLARACAO       = "invocar", ID, "como", TIPO, "com", (EXPRESSAO | STRING | BOOLEANO | "consultar_oraculo()"), ";" ;
 
 TIPO             = "poder" | "palavra" | "destino" ;
 
-COMANDO          = ATRIBUICAO
-                 | NARRATIVA
-                 | CONDICAO
-                 | CICLO ;
+COMANDO          = ATRIBUICAO | NARRATIVA | CONDICAO | CICLO ;
 
 ATRIBUICAO       = ID, "recebe", EXPRESSAO, ";" ;
 
-NARRATIVA        = "proclamar", "(", STRING, ")", ";" ;
+NARRATIVA        = "proclamar", "(", EXPRESSAO, ")", ";" ;
 
 CONDICAO         = "se", "(", EXPRESSAO, ")", BLOCO, [ "senao", BLOCO ] ;
 
 CICLO            = "enquanto", "(", EXPRESSAO, ")", BLOCO ;
 
-BLOCO            = "{", { COMANDO | DECLARACAO | ";" }, "}" ;
+BLOCO            = "{", { COMANDO | DECLARACAO }, "}" ;
 
 EXPRESSAO        = EXPRESSAO_LOGICA ;
 
@@ -33,20 +30,15 @@ TERMO            = FATOR, { ("fortificar" | "enfraquecer"), FATOR } ;
 
 FATOR            = [ ("bênção" | "maldição") ], ELEMENTO ;
 
-ELEMENTO         = ID
-                 | NUM
-                 | STRING
-                 | BOOLEANO
-                 | "consultar_oraculo", "(", ")" 
-                 | "(", EXPRESSAO, ")" ;
+ELEMENTO         = ID | NUM | STR | BOOL | "consultar_oraculo()" | "(", EXPRESSAO, ")" ;
 
 ID               = letra, { letra | "_" | digito } ;
 
 NUM              = ["-"], digito, { digito } ;
 
-STRING           = '"', { caractere }, '"' ;
+STR              = '"', { caractere }, '"' ;
 
-BOOLEANO         = "verdadeiro" | "falso" ;
+BOOL             = "verdadeiro" | "falso" ;
 
 letra            = "a" | ... | "z" | "A" | ... | "Z" ;
 

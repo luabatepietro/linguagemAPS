@@ -78,7 +78,7 @@ void yyerror(const char *s);
 
 typedef struct {
     char *id;
-    int tipo; // 0 = poder, 1 = palavra, 2 = destino
+    int tipo;
     union {
         int numero;
         char *texto;
@@ -118,11 +118,32 @@ int obter(char *id) {
     return 0;
 }
 
-void proclamar(char *texto) {
-    printf("%s\n", texto);
+char* consultar_string() {
+    static char buffer[256];
+    printf("Digite um texto: ");
+    scanf(" %[^\n]", buffer);
+    return strdup(buffer);
 }
 
-#line 126 "mitologia.tab.c"
+int consultar_int() {
+    int x;
+    printf("Digite um número: ");
+    scanf("%d", &x);
+    return x;
+}
+
+int consultar_bool() {
+    char buffer[10];
+    printf("Digite verdadeiro ou falso: ");
+    scanf("%s", buffer);
+    return strcmp(buffer, "verdadeiro") == 0;
+}
+
+void proclamar(char *texto) {
+    printf("\"%s\"\n", texto);
+}
+
+#line 147 "mitologia.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -195,13 +216,16 @@ enum yysymbol_kind_t
   YYSYMBOL_tipo = 42,                      /* tipo  */
   YYSYMBOL_atribuicao = 43,                /* atribuicao  */
   YYSYMBOL_narrativa = 44,                 /* narrativa  */
-  YYSYMBOL_expressao = 45,                 /* expressao  */
-  YYSYMBOL_expressao_logica = 46,          /* expressao_logica  */
-  YYSYMBOL_expressao_relacional = 47,      /* expressao_relacional  */
-  YYSYMBOL_expressao_aritmetica = 48,      /* expressao_aritmetica  */
-  YYSYMBOL_termo = 49,                     /* termo  */
-  YYSYMBOL_fator = 50,                     /* fator  */
-  YYSYMBOL_elemento = 51                   /* elemento  */
+  YYSYMBOL_condicao = 45,                  /* condicao  */
+  YYSYMBOL_ciclo = 46,                     /* ciclo  */
+  YYSYMBOL_bloco = 47,                     /* bloco  */
+  YYSYMBOL_expressao = 48,                 /* expressao  */
+  YYSYMBOL_expressao_logica = 49,          /* expressao_logica  */
+  YYSYMBOL_expressao_relacional = 50,      /* expressao_relacional  */
+  YYSYMBOL_expressao_aritmetica = 51,      /* expressao_aritmetica  */
+  YYSYMBOL_termo = 52,                     /* termo  */
+  YYSYMBOL_fator = 53,                     /* fator  */
+  YYSYMBOL_elemento = 54                   /* elemento  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -529,16 +553,16 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  4
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   63
+#define YYLAST   86
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  37
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  15
+#define YYNNTS  18
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  36
+#define YYNRULES  43
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  68
+#define YYNSTATES  89
 
 /* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   291
@@ -591,10 +615,11 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    86,    86,    90,    91,    95,    96,    97,   101,   104,
-     107,   113,   114,   115,   119,   125,   131,   135,   136,   137,
-     141,   142,   143,   144,   145,   149,   150,   151,   155,   156,
-     157,   161,   162,   163,   167,   168,   169
+       0,   104,   104,   106,   107,   109,   110,   111,   112,   113,
+     116,   119,   122,   125,   139,   140,   141,   144,   148,   152,
+     153,   155,   157,   159,   162,   163,   164,   168,   169,   170,
+     171,   172,   176,   177,   178,   182,   183,   184,   188,   189,
+     190,   193,   194,   195
 };
 #endif
 
@@ -618,8 +643,9 @@ static const char *const yytname[] =
   "ENFRAQUECER", "BENCAO", "MALDICAO", "IGUAL", "DIFERENTE", "E_LOGICO",
   "OU_LOGICO", "NUM", "STRING", "BOOLEANO", "ID", "$accept", "programa",
   "lista_comandos", "comando", "declaracao", "tipo", "atribuicao",
-  "narrativa", "expressao", "expressao_logica", "expressao_relacional",
-  "expressao_aritmetica", "termo", "fator", "elemento", YY_NULLPTR
+  "narrativa", "condicao", "ciclo", "bloco", "expressao",
+  "expressao_logica", "expressao_relacional", "expressao_aritmetica",
+  "termo", "fator", "elemento", YY_NULLPTR
 };
 
 static const char *
@@ -629,7 +655,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-36)
+#define YYPACT_NINF (-55)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -643,13 +669,15 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      21,   -36,    43,    -4,   -36,   -36,   -35,    -1,    32,   -36,
-     -36,   -36,   -36,    35,    20,    -2,    -7,    49,    -2,     6,
-       6,   -36,   -36,    50,   -36,   -15,    -9,    15,   -36,   -36,
-     -36,   -36,   -36,    37,    51,    53,   -36,   -36,   -36,    -2,
-      -2,    -2,    -2,    -2,    -2,    -2,    -2,    -2,    -2,     2,
-     -36,   -36,   -36,   -36,     4,     4,    15,    15,     4,     4,
-     -36,   -36,    54,    55,    56,   -36,   -36,   -36
+       3,   -55,    23,    -2,   -55,   -55,    -8,    30,    38,    61,
+      47,   -55,   -55,   -55,   -55,   -55,   -55,    50,    35,    17,
+      17,    17,    -3,    64,    17,     0,     0,   -55,   -55,    65,
+     -55,    20,     8,    29,   -55,   -55,    66,    67,   -55,   -55,
+     -55,    54,    68,    70,   -55,   -55,    74,    17,    17,    17,
+      17,    17,    17,    17,    17,    17,    17,    74,   -55,    13,
+     -55,   -55,   -55,    69,   -55,   -55,    33,    33,    29,    29,
+      33,    33,   -55,   -55,   -55,    73,    72,    75,    76,     6,
+      74,    78,   -55,   -55,   -55,   -55,   -55,    79,   -55
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -657,27 +685,29 @@ static const yytype_int8 yypact[] =
    means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       0,     3,     0,     0,     1,     2,     0,     0,     0,     4,
-       5,     6,     7,     0,     0,     0,     0,     0,     0,     0,
-       0,    35,    34,     0,    16,    17,    20,    25,    28,    33,
-      11,    12,    13,     0,     0,     0,    31,    32,    14,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-      15,    36,    18,    19,    21,    22,    26,    27,    23,    24,
-      29,    30,     0,     0,     0,     9,    10,     8
+       0,     3,     0,     0,     1,     2,     0,     0,     0,     0,
+       0,     4,     5,     6,     7,     8,     9,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,    42,    41,     0,
+      23,    24,    27,    32,    35,    40,     0,     0,    14,    15,
+      16,     0,     0,     0,    38,    39,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,    17,     0,
+      18,    43,     3,    19,    25,    26,    28,    29,    33,    34,
+      30,    31,    36,    37,    21,     0,     0,     0,     0,     0,
+       0,     0,    11,    12,    10,    22,    20,     0,    13
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -36,   -36,   -36,   -36,   -36,   -36,   -36,   -36,   -16,   -36,
-       5,   -23,     3,     1,    31
+     -55,   -55,    18,   -55,   -55,   -55,   -55,   -55,   -55,   -55,
+     -54,   -20,   -55,    11,   -29,     9,     7,    39
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,     2,     3,     9,    10,    33,    11,    12,    23,    24,
-      25,    26,    27,    28,    29
+       0,     2,     3,    11,    12,    41,    13,    14,    15,    16,
+      63,    29,    30,    31,    32,    33,    34,    35
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -685,55 +715,63 @@ static const yytype_int8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-       5,    13,    35,    18,    14,     6,     7,    18,    30,    31,
-      32,    18,    41,    42,    43,    44,    39,    40,    54,    55,
-      45,    46,    58,    59,     1,    19,    20,    43,    44,    19,
-      20,    21,     8,    64,    22,    21,    62,    63,    22,    21,
-      47,    48,    22,     4,    52,    53,    56,    57,    60,    61,
-      36,    37,    15,    16,    17,    34,    49,    38,    50,    51,
-       0,    65,    66,    67
+      36,    37,     5,    74,    43,    24,     1,     6,     7,     8,
+      85,     9,    38,    39,    40,     6,     7,     8,    24,     9,
+      66,    67,    24,     4,    70,    71,    86,    75,    17,    49,
+      50,    51,    52,    27,    10,    18,    28,    53,    54,    78,
+      25,    26,    10,    19,    25,    26,    27,    76,    77,    28,
+      27,    47,    48,    28,    55,    56,    51,    52,    64,    65,
+      68,    69,    72,    73,    44,    45,    20,    21,    22,    23,
+      42,    46,    57,    59,    58,    60,    61,    62,    81,    82,
+      79,    80,    83,    84,    87,     0,    88
 };
 
 static const yytype_int8 yycheck[] =
 {
-       4,    36,    18,     5,     5,     9,    10,     5,    15,    16,
-      17,     5,    21,    22,    23,    24,    31,    32,    41,    42,
-      29,    30,    45,    46,     3,    27,    28,    23,    24,    27,
-      28,    33,    36,    49,    36,    33,    34,    35,    36,    33,
-      25,    26,    36,     0,    39,    40,    43,    44,    47,    48,
-      19,    20,    20,    18,    34,     6,    19,     7,     7,     6,
-      -1,     7,     7,     7
+      20,    21,     4,    57,    24,     5,     3,     9,    10,    11,
+       4,    13,    15,    16,    17,     9,    10,    11,     5,    13,
+      49,    50,     5,     0,    53,    54,    80,    14,    36,    21,
+      22,    23,    24,    33,    36,     5,    36,    29,    30,    59,
+      27,    28,    36,     5,    27,    28,    33,    34,    35,    36,
+      33,    31,    32,    36,    25,    26,    23,    24,    47,    48,
+      51,    52,    55,    56,    25,    26,     5,    20,    18,    34,
+       6,     6,     6,    19,     7,     7,     6,     3,     5,     7,
+      62,    12,     7,     7,     6,    -1,     7
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
    state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,     3,    38,    39,     0,     4,     9,    10,    36,    40,
-      41,    43,    44,    36,     5,    20,    18,    34,     5,    27,
-      28,    33,    36,    45,    46,    47,    48,    49,    50,    51,
-      15,    16,    17,    42,     6,    45,    51,    51,     7,    31,
-      32,    21,    22,    23,    24,    29,    30,    25,    26,    19,
-       7,     6,    47,    47,    48,    48,    49,    49,    48,    48,
-      50,    50,    34,    35,    45,     7,     7,     7
+       0,     3,    38,    39,     0,     4,     9,    10,    11,    13,
+      36,    40,    41,    43,    44,    45,    46,    36,     5,     5,
+       5,    20,    18,    34,     5,    27,    28,    33,    36,    48,
+      49,    50,    51,    52,    53,    54,    48,    48,    15,    16,
+      17,    42,     6,    48,    54,    54,     6,    31,    32,    21,
+      22,    23,    24,    29,    30,    25,    26,     6,     7,    19,
+       7,     6,     3,    47,    50,    50,    51,    51,    52,    52,
+      51,    51,    53,    53,    47,    14,    34,    35,    48,    39,
+      12,     5,     7,     7,     7,     4,    47,     6,     7
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    37,    38,    39,    39,    40,    40,    40,    41,    41,
-      41,    42,    42,    42,    43,    44,    45,    46,    46,    46,
-      47,    47,    47,    47,    47,    48,    48,    48,    49,    49,
-      49,    50,    50,    50,    51,    51,    51
+       0,    37,    38,    39,    39,    40,    40,    40,    40,    40,
+      41,    41,    41,    41,    42,    42,    42,    43,    44,    45,
+      45,    46,    47,    48,    49,    49,    49,    50,    50,    50,
+      50,    50,    51,    51,    51,    52,    52,    52,    53,    53,
+      53,    54,    54,    54
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
-       0,     2,     3,     0,     2,     1,     1,     1,     7,     7,
-       7,     1,     1,     1,     4,     5,     1,     1,     3,     3,
-       1,     3,     3,     3,     3,     1,     3,     3,     1,     3,
-       3,     2,     2,     1,     1,     1,     3
+       0,     2,     3,     0,     2,     1,     1,     1,     1,     1,
+       7,     7,     7,     9,     1,     1,     1,     4,     5,     5,
+       7,     5,     3,     1,     1,     3,     3,     1,     3,     3,
+       3,     3,     1,     3,     3,     1,     3,     3,     2,     2,
+       1,     1,     1,     3
 };
 
 
@@ -1196,156 +1234,173 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-  case 8: /* declaracao: INVOCAR ID COMO tipo COM expressao PONTO_VIRGULA  */
-#line 101 "mitologia.y"
+  case 10: /* declaracao: INVOCAR ID COMO tipo COM expressao PONTO_VIRGULA  */
+#line 116 "mitologia.y"
                                                        {
         declarar((yyvsp[-5].id), (yyvsp[-3].numero), &(yyvsp[-1].numero));
     }
-#line 1205 "mitologia.tab.c"
+#line 1243 "mitologia.tab.c"
     break;
 
-  case 9: /* declaracao: INVOCAR ID COMO tipo COM STRING PONTO_VIRGULA  */
-#line 104 "mitologia.y"
+  case 11: /* declaracao: INVOCAR ID COMO tipo COM STRING PONTO_VIRGULA  */
+#line 119 "mitologia.y"
                                                     {
         declarar((yyvsp[-5].id), (yyvsp[-3].numero), (yyvsp[-1].texto));
     }
-#line 1213 "mitologia.tab.c"
+#line 1251 "mitologia.tab.c"
     break;
 
-  case 10: /* declaracao: INVOCAR ID COMO tipo COM BOOLEANO PONTO_VIRGULA  */
-#line 107 "mitologia.y"
+  case 12: /* declaracao: INVOCAR ID COMO tipo COM BOOLEANO PONTO_VIRGULA  */
+#line 122 "mitologia.y"
                                                       {
         declarar((yyvsp[-5].id), (yyvsp[-3].numero), &(yyvsp[-1].booleano));
     }
-#line 1221 "mitologia.tab.c"
+#line 1259 "mitologia.tab.c"
     break;
 
-  case 11: /* tipo: PODER  */
-#line 113 "mitologia.y"
-              { (yyval.numero) = 0; }
-#line 1227 "mitologia.tab.c"
-    break;
-
-  case 12: /* tipo: PALAVRA  */
-#line 114 "mitologia.y"
-              { (yyval.numero) = 1; }
-#line 1233 "mitologia.tab.c"
-    break;
-
-  case 13: /* tipo: DESTINO  */
-#line 115 "mitologia.y"
-              { (yyval.numero) = 2; }
-#line 1239 "mitologia.tab.c"
-    break;
-
-  case 14: /* atribuicao: ID RECEBE expressao PONTO_VIRGULA  */
-#line 119 "mitologia.y"
-                                        {
-        atribuir((yyvsp[-3].id), (yyvsp[-1].numero));
-    }
-#line 1247 "mitologia.tab.c"
-    break;
-
-  case 15: /* narrativa: PROCLAMAR ABRE_PARENTESES STRING FECHA_PARENTESES PONTO_VIRGULA  */
+  case 13: /* declaracao: INVOCAR ID COMO tipo COM CONSULTAR_ORACULO ABRE_PARENTESES FECHA_PARENTESES PONTO_VIRGULA  */
 #line 125 "mitologia.y"
-                                                                      {
-        proclamar((yyvsp[-2].texto));
+                                                                                                {
+        if ((yyvsp[-5].numero) == 0) {
+            int v = consultar_int();
+            declarar((yyvsp[-7].id), (yyvsp[-5].numero), &v);
+        } else if ((yyvsp[-5].numero) == 1) {
+            char* v = consultar_string();
+            declarar((yyvsp[-7].id), (yyvsp[-5].numero), v);
+        } else if ((yyvsp[-5].numero) == 2) {
+            int v = consultar_bool();
+            declarar((yyvsp[-7].id), (yyvsp[-5].numero), &v);
+        }
     }
-#line 1255 "mitologia.tab.c"
+#line 1276 "mitologia.tab.c"
     break;
 
-  case 18: /* expressao_logica: expressao_relacional E_LOGICO expressao_relacional  */
-#line 136 "mitologia.y"
-                                                         { (yyval.numero) = (yyvsp[-2].numero) && (yyvsp[0].numero); }
-#line 1261 "mitologia.tab.c"
+  case 14: /* tipo: PODER  */
+#line 139 "mitologia.y"
+             { (yyval.numero) = 0; }
+#line 1282 "mitologia.tab.c"
     break;
 
-  case 19: /* expressao_logica: expressao_relacional OU_LOGICO expressao_relacional  */
-#line 137 "mitologia.y"
-                                                          { (yyval.numero) = (yyvsp[-2].numero) || (yyvsp[0].numero); }
-#line 1267 "mitologia.tab.c"
+  case 15: /* tipo: PALAVRA  */
+#line 140 "mitologia.y"
+               { (yyval.numero) = 1; }
+#line 1288 "mitologia.tab.c"
     break;
 
-  case 21: /* expressao_relacional: expressao_aritmetica SUPERA expressao_aritmetica  */
-#line 142 "mitologia.y"
-                                                       { (yyval.numero) = (yyvsp[-2].numero) > (yyvsp[0].numero); }
-#line 1273 "mitologia.tab.c"
+  case 16: /* tipo: DESTINO  */
+#line 141 "mitologia.y"
+               { (yyval.numero) = 2; }
+#line 1294 "mitologia.tab.c"
     break;
 
-  case 22: /* expressao_relacional: expressao_aritmetica CEDE expressao_aritmetica  */
-#line 143 "mitologia.y"
-                                                     { (yyval.numero) = (yyvsp[-2].numero) < (yyvsp[0].numero); }
-#line 1279 "mitologia.tab.c"
-    break;
-
-  case 23: /* expressao_relacional: expressao_aritmetica IGUAL expressao_aritmetica  */
+  case 17: /* atribuicao: ID RECEBE expressao PONTO_VIRGULA  */
 #line 144 "mitologia.y"
-                                                      { (yyval.numero) = (yyvsp[-2].numero) == (yyvsp[0].numero); }
-#line 1285 "mitologia.tab.c"
+                                               {
+    atribuir((yyvsp[-3].id), (yyvsp[-1].numero));
+}
+#line 1302 "mitologia.tab.c"
     break;
 
-  case 24: /* expressao_relacional: expressao_aritmetica DIFERENTE expressao_aritmetica  */
-#line 145 "mitologia.y"
-                                                          { (yyval.numero) = (yyvsp[-2].numero) != (yyvsp[0].numero); }
-#line 1291 "mitologia.tab.c"
+  case 18: /* narrativa: PROCLAMAR ABRE_PARENTESES STRING FECHA_PARENTESES PONTO_VIRGULA  */
+#line 148 "mitologia.y"
+                                                                            {
+    proclamar((yyvsp[-2].texto));
+}
+#line 1310 "mitologia.tab.c"
     break;
 
-  case 26: /* expressao_aritmetica: expressao_aritmetica UNIR termo  */
-#line 150 "mitologia.y"
-                                      { (yyval.numero) = (yyvsp[-2].numero) + (yyvsp[0].numero); }
-#line 1297 "mitologia.tab.c"
+  case 25: /* expressao_logica: expressao_relacional E_LOGICO expressao_relacional  */
+#line 163 "mitologia.y"
+                                                         { (yyval.numero) = (yyvsp[-2].numero) && (yyvsp[0].numero); }
+#line 1316 "mitologia.tab.c"
     break;
 
-  case 27: /* expressao_aritmetica: expressao_aritmetica SEPARAR termo  */
-#line 151 "mitologia.y"
-                                         { (yyval.numero) = (yyvsp[-2].numero) - (yyvsp[0].numero); }
-#line 1303 "mitologia.tab.c"
+  case 26: /* expressao_logica: expressao_relacional OU_LOGICO expressao_relacional  */
+#line 164 "mitologia.y"
+                                                          { (yyval.numero) = (yyvsp[-2].numero) || (yyvsp[0].numero); }
+#line 1322 "mitologia.tab.c"
     break;
 
-  case 29: /* termo: termo FORTIFICAR fator  */
-#line 156 "mitologia.y"
-                             { (yyval.numero) = (yyvsp[-2].numero) * (yyvsp[0].numero); }
-#line 1309 "mitologia.tab.c"
-    break;
-
-  case 30: /* termo: termo ENFRAQUECER fator  */
-#line 157 "mitologia.y"
-                              { (yyval.numero) = (yyvsp[-2].numero) / (yyvsp[0].numero); }
-#line 1315 "mitologia.tab.c"
-    break;
-
-  case 31: /* fator: BENCAO elemento  */
-#line 161 "mitologia.y"
-                      { (yyval.numero) = +(yyvsp[0].numero); }
-#line 1321 "mitologia.tab.c"
-    break;
-
-  case 32: /* fator: MALDICAO elemento  */
-#line 162 "mitologia.y"
-                        { (yyval.numero) = -(yyvsp[0].numero); }
-#line 1327 "mitologia.tab.c"
-    break;
-
-  case 34: /* elemento: ID  */
-#line 167 "mitologia.y"
-         { (yyval.numero) = obter((yyvsp[0].id)); }
-#line 1333 "mitologia.tab.c"
-    break;
-
-  case 35: /* elemento: NUM  */
-#line 168 "mitologia.y"
-          { (yyval.numero) = (yyvsp[0].numero); }
-#line 1339 "mitologia.tab.c"
-    break;
-
-  case 36: /* elemento: ABRE_PARENTESES expressao FECHA_PARENTESES  */
+  case 28: /* expressao_relacional: expressao_aritmetica SUPERA expressao_aritmetica  */
 #line 169 "mitologia.y"
+                                                       { (yyval.numero) = (yyvsp[-2].numero) > (yyvsp[0].numero); }
+#line 1328 "mitologia.tab.c"
+    break;
+
+  case 29: /* expressao_relacional: expressao_aritmetica CEDE expressao_aritmetica  */
+#line 170 "mitologia.y"
+                                                     { (yyval.numero) = (yyvsp[-2].numero) < (yyvsp[0].numero); }
+#line 1334 "mitologia.tab.c"
+    break;
+
+  case 30: /* expressao_relacional: expressao_aritmetica IGUAL expressao_aritmetica  */
+#line 171 "mitologia.y"
+                                                      { (yyval.numero) = (yyvsp[-2].numero) == (yyvsp[0].numero); }
+#line 1340 "mitologia.tab.c"
+    break;
+
+  case 31: /* expressao_relacional: expressao_aritmetica DIFERENTE expressao_aritmetica  */
+#line 172 "mitologia.y"
+                                                          { (yyval.numero) = (yyvsp[-2].numero) != (yyvsp[0].numero); }
+#line 1346 "mitologia.tab.c"
+    break;
+
+  case 33: /* expressao_aritmetica: expressao_aritmetica UNIR termo  */
+#line 177 "mitologia.y"
+                                      { (yyval.numero) = (yyvsp[-2].numero) + (yyvsp[0].numero); }
+#line 1352 "mitologia.tab.c"
+    break;
+
+  case 34: /* expressao_aritmetica: expressao_aritmetica SEPARAR termo  */
+#line 178 "mitologia.y"
+                                         { (yyval.numero) = (yyvsp[-2].numero) - (yyvsp[0].numero); }
+#line 1358 "mitologia.tab.c"
+    break;
+
+  case 36: /* termo: termo FORTIFICAR fator  */
+#line 183 "mitologia.y"
+                             { (yyval.numero) = (yyvsp[-2].numero) * (yyvsp[0].numero); }
+#line 1364 "mitologia.tab.c"
+    break;
+
+  case 37: /* termo: termo ENFRAQUECER fator  */
+#line 184 "mitologia.y"
+                              { (yyval.numero) = (yyvsp[-2].numero) / (yyvsp[0].numero); }
+#line 1370 "mitologia.tab.c"
+    break;
+
+  case 38: /* fator: BENCAO elemento  */
+#line 188 "mitologia.y"
+                      { (yyval.numero) = +(yyvsp[0].numero); }
+#line 1376 "mitologia.tab.c"
+    break;
+
+  case 39: /* fator: MALDICAO elemento  */
+#line 189 "mitologia.y"
+                        { (yyval.numero) = -(yyvsp[0].numero); }
+#line 1382 "mitologia.tab.c"
+    break;
+
+  case 41: /* elemento: ID  */
+#line 193 "mitologia.y"
+         { (yyval.numero) = obter((yyvsp[0].id)); }
+#line 1388 "mitologia.tab.c"
+    break;
+
+  case 42: /* elemento: NUM  */
+#line 194 "mitologia.y"
+          { (yyval.numero) = (yyvsp[0].numero); }
+#line 1394 "mitologia.tab.c"
+    break;
+
+  case 43: /* elemento: ABRE_PARENTESES expressao FECHA_PARENTESES  */
+#line 195 "mitologia.y"
                                                  { (yyval.numero) = (yyvsp[-1].numero); }
-#line 1345 "mitologia.tab.c"
+#line 1400 "mitologia.tab.c"
     break;
 
 
-#line 1349 "mitologia.tab.c"
+#line 1404 "mitologia.tab.c"
 
       default: break;
     }
@@ -1538,7 +1593,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 172 "mitologia.y"
+#line 198 "mitologia.y"
 
 
 void yyerror(const char *s) {

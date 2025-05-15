@@ -8,7 +8,7 @@ void yyerror(const char *s);
 
 typedef struct {
     char *id;
-    int tipo; // 0 = poder, 1 = palavra, 2 = destino
+    int tipo;
     union {
         int numero;
         char *texto;
@@ -48,8 +48,29 @@ int obter(char *id) {
     return 0;
 }
 
+char* consultar_string() {
+    static char buffer[256];
+    printf("Digite um texto: ");
+    scanf(" %[^\n]", buffer);
+    return strdup(buffer);
+}
+
+int consultar_int() {
+    int x;
+    printf("Digite um número: ");
+    scanf("%d", &x);
+    return x;
+}
+
+int consultar_bool() {
+    char buffer[10];
+    printf("Digite verdadeiro ou falso: ");
+    scanf("%s", buffer);
+    return strcmp(buffer, "verdadeiro") == 0;
+}
+
 void proclamar(char *texto) {
-    printf("%s\n", texto);
+    printf("\"%s\"\n", texto);
 }
 %}
 
@@ -63,8 +84,7 @@ void proclamar(char *texto) {
 %token ABRE_CHAVES FECHA_CHAVES ABRE_PARENTESES FECHA_PARENTESES
 %token PONTO_VIRGULA VIRGULA
 %token INVOCAR PROCLAMAR SE SENAO ENQUANTO CONSULTAR_ORACULO
-%token PODER PALAVRA DESTINO
-%token COMO COM
+%token PODER PALAVRA DESTINO COMO COM
 %token RECEBE
 %token SUPERA CEDE UNIR SEPARAR FORTIFICAR ENFRAQUECER
 %token BENCAO MALDICAO
@@ -75,27 +95,22 @@ void proclamar(char *texto) {
 %token <booleano> BOOLEANO
 %token <id> ID
 
-%type <numero> tipo declaracao elemento
-%type <numero> expressao expressao_logica expressao_relacional expressao_aritmetica termo fator
+%type <numero> tipo elemento expressao expressao_logica expressao_relacional expressao_aritmetica termo fator
 
 %start programa
 
 %%
 
-programa
-    : ABRE_CHAVES lista_comandos FECHA_CHAVES
-    ;
+programa : ABRE_CHAVES lista_comandos FECHA_CHAVES ;
 
-lista_comandos
-    : /* vazio */
-    | lista_comandos comando
-    ;
+lista_comandos : /* vazio */
+               | lista_comandos comando ;
 
-comando
-    : declaracao
-    | atribuicao
-    | narrativa
-    ;
+comando : declaracao
+        | atribuicao
+        | narrativa
+        | condicao
+        | ciclo ;
 
 declaracao
     : INVOCAR ID COMO tipo COM expressao PONTO_VIRGULA {
@@ -107,29 +122,41 @@ declaracao
     | INVOCAR ID COMO tipo COM BOOLEANO PONTO_VIRGULA {
         declarar($2, $4, &$6);
     }
-    ;
-
-tipo
-    : PODER   { $$ = 0; }
-    | PALAVRA { $$ = 1; }
-    | DESTINO { $$ = 2; }
-    ;
-
-atribuicao
-    : ID RECEBE expressao PONTO_VIRGULA {
-        atribuir($1, $3);
+    | INVOCAR ID COMO tipo COM CONSULTAR_ORACULO ABRE_PARENTESES FECHA_PARENTESES PONTO_VIRGULA {
+        if ($4 == 0) {
+            int v = consultar_int();
+            declarar($2, $4, &v);
+        } else if ($4 == 1) {
+            char* v = consultar_string();
+            declarar($2, $4, v);
+        } else if ($4 == 2) {
+            int v = consultar_bool();
+            declarar($2, $4, &v);
+        }
     }
     ;
 
-narrativa
-    : PROCLAMAR ABRE_PARENTESES STRING FECHA_PARENTESES PONTO_VIRGULA {
-        proclamar($3);
-    }
-    ;
+tipo : PODER { $$ = 0; }
+     | PALAVRA { $$ = 1; }
+     | DESTINO { $$ = 2; }
+     ;
 
-expressao
-    : expressao_logica
-    ;
+atribuicao : ID RECEBE expressao PONTO_VIRGULA {
+    atribuir($1, $3);
+} ;
+
+narrativa : PROCLAMAR ABRE_PARENTESES STRING FECHA_PARENTESES PONTO_VIRGULA {
+    proclamar($3);
+} ;
+
+condicao : SE ABRE_PARENTESES expressao FECHA_PARENTESES bloco
+         | SE ABRE_PARENTESES expressao FECHA_PARENTESES bloco SENAO bloco ;
+
+ciclo : ENQUANTO ABRE_PARENTESES expressao FECHA_PARENTESES bloco ;
+
+bloco : ABRE_CHAVES lista_comandos FECHA_CHAVES ;
+
+expressao : expressao_logica ;
 
 expressao_logica
     : expressao_relacional
@@ -160,8 +187,7 @@ termo
 fator
     : BENCAO elemento { $$ = +$2; }
     | MALDICAO elemento { $$ = -$2; }
-    | elemento
-    ;
+    | elemento ;
 
 elemento
     : ID { $$ = obter($1); }

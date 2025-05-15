@@ -12,14 +12,14 @@ Uma linguagem de programação inspirada na mitologia grega, onde escrever códi
 
 ## Comandos Místicos
 
-| Palavra        | Equivalente | Função                            |
-|----------------|-------------|-----------------------------------|
-| `invocar`      | declaração  | Criação de uma variável           |
-| `proclamar`    | `print`     | Exibe uma mensagem na tela       |
-| `recebe`       | `=`         | Atribuição de valor               |
-| `se` / `senao` | `if`/`else` | Condicional                       |
-| `enquanto`     | `while`     | Repetição                         |
-| `consultar_oraculo()` | `input()` | Entrada do usuário         |
+| Palavra              | Equivalente | Função                                 |
+|----------------------|-------------|----------------------------------------|
+| `invocar`            | declaração  | Criação de uma variável                |
+| `proclamar`          | `print`     | Exibe uma mensagem na tela             |
+| `recebe`             | `=`         | Atribuição de valor                    |
+| `se` / `senao`       | `if`/`else` | Condicional                            |
+| `enquanto`           | `while`     | Repetição                              |
+| `consultar_oraculo()`| `input()`   | Entrada do usuário via terminal        |
 
 ## Operadores Mitológicos
 
@@ -34,12 +34,28 @@ Uma linguagem de programação inspirada na mitologia grega, onde escrever códi
 | `e`            | `&&`    | conjunção lógica                |
 | `ou`           | `||`    | disjunção lógica                |
 
-## Exemplo de Código
+## Exemplo de Código Completo
 
 ```myth
 {
+    proclamar("Iniciando a jornada...");
+
     invocar energia como poder com 10;
-    proclamar("Começa a lenda de um herói...");
+    invocar mensagem como palavra com "Energia duplicada!";
+    proclamar(mensagem);
+
     energia recebe energia fortificar 2;
-    proclamar("Energia duplicada!");
+
+    se (energia supera 10) {
+        proclamar("Força lendária reconhecida.");
+    } senao {
+        proclamar("Energia ainda fraca.");
+    }
+
+    enquanto (energia cede 25) {
+        proclamar("↻ Loop: fortalecendo energia...");
+        energia recebe energia unir 3;
+    }
+
+    proclamar("🏁 Jornada concluída.");
 }

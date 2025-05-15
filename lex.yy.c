@@ -321,8 +321,6 @@ void yyfree ( void *  );
 	}
 #define YY_AT_BOL() (YY_CURRENT_BUFFER_LVALUE->yy_at_bol)
 
-/* Begin user sect3 */
-
 #define yywrap() (/*CONSTCOND*/1)
 #define YY_SKIP_YYWRAP
 typedef flex_uint8_t YY_CHAR;
@@ -544,8 +542,8 @@ char *yytext;
 #line 1 "mitologia.l"
 #line 2 "mitologia.l"
 #include "mitologia.tab.h"
-#line 548 "lex.yy.c"
-#line 549 "lex.yy.c"
+#line 546 "lex.yy.c"
+#line 547 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -765,7 +763,7 @@ YY_DECL
 #line 7 "mitologia.l"
 
 
-#line 769 "lex.yy.c"
+#line 767 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1006,15 +1004,15 @@ YY_RULE_SETUP
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 56 "mitologia.l"
-{ /* ignora caracteres inválidos por enquanto */ }
+#line 55 "mitologia.l"
+; // ignora outros
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 58 "mitologia.l"
+#line 56 "mitologia.l"
 ECHO;
 	YY_BREAK
-#line 1018 "lex.yy.c"
+#line 1016 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2019,6 +2017,4 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 58 "mitologia.l"
-
-
+#line 56 "mitologia.l"

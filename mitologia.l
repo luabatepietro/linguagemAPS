@@ -51,8 +51,5 @@
 
 [a-zA-Z_][a-zA-Z0-9_]* { yylval.id = strdup(yytext); return ID; }
 
-[ \t\n\r]+       ; // ignora espaços e quebras
-
-.               { /* ignora caracteres inválidos por enquanto */ }
-
-%%
+[ \t\n\r]+      ; // ignora espaços e quebras
+.               ; // ignora outros
