@@ -1,8 +1,8 @@
 PROGRAMA         = "{", { DECLARACAO | COMANDO | ";" }, "}" ;
 
-DECLARACAO       = "criar", ID, "como", TIPO, [ "com", EXPRESSAO ], ";" ;
+DECLARACAO       = "invocar", ID, "como", TIPO, "com", EXPRESSAO, ";" ;
 
-TIPO             = "poder" | "texto" | "destino" ;
+TIPO             = "poder" | "palavra" | "destino" ;
 
 COMANDO          = ATRIBUICAO
                  | NARRATIVA
@@ -11,9 +11,9 @@ COMANDO          = ATRIBUICAO
 
 ATRIBUICAO       = ID, "recebe", EXPRESSAO, ";" ;
 
-NARRATIVA        = "contar", "(", EXPRESSAO, ")", ";" ;
+NARRATIVA        = "proclamar", "(", STRING, ")", ";" ;
 
-CONDICAO         = "quando", "(", EXPRESSAO, ")", BLOCO, [ "senao", BLOCO ] ;
+CONDICAO         = "se", "(", EXPRESSAO, ")", BLOCO, [ "senao", BLOCO ] ;
 
 CICLO            = "enquanto", "(", EXPRESSAO, ")", BLOCO ;
 
@@ -35,18 +35,18 @@ FATOR            = [ ("bênção" | "maldição") ], ELEMENTO ;
 
 ELEMENTO         = ID
                  | NUM
-                 | STR
-                 | BOOL
-                 | "consultar", "(", ")" 
+                 | STRING
+                 | BOOLEANO
+                 | "consultar_oraculo", "(", ")" 
                  | "(", EXPRESSAO, ")" ;
 
 ID               = letra, { letra | "_" | digito } ;
 
 NUM              = ["-"], digito, { digito } ;
 
-STR              = '"', { caractere }, '"' ;
+STRING           = '"', { caractere }, '"' ;
 
-BOOL             = "verdadeiro" | "falso" ;
+BOOLEANO         = "verdadeiro" | "falso" ;
 
 letra            = "a" | ... | "z" | "A" | ... | "Z" ;
 

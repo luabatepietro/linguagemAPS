@@ -24,6 +24,9 @@
 "palavra"       { return PALAVRA; }
 "destino"       { return DESTINO; }
 
+"como"          { return COMO; }
+"com"           { return COM; }
+
 "recebe"        { return RECEBE; }
 
 "supera"        { return SUPERA; }
@@ -53,4 +56,3 @@
 .               { /* ignora caracteres inválidos por enquanto */ }
 
 %%
-

@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+int yylex(void);
+void yyerror(const char *s);
+
 typedef struct {
     char *id;
     int tipo; // 0 = poder, 1 = palavra, 2 = destino
@@ -61,6 +64,7 @@ void proclamar(char *texto) {
 %token PONTO_VIRGULA VIRGULA
 %token INVOCAR PROCLAMAR SE SENAO ENQUANTO CONSULTAR_ORACULO
 %token PODER PALAVRA DESTINO
+%token COMO COM
 %token RECEBE
 %token SUPERA CEDE UNIR SEPARAR FORTIFICAR ENFRAQUECER
 %token BENCAO MALDICAO
@@ -71,6 +75,7 @@ void proclamar(char *texto) {
 %token <booleano> BOOLEANO
 %token <id> ID
 
+%type <numero> tipo declaracao elemento
 %type <numero> expressao expressao_logica expressao_relacional expressao_aritmetica termo fator
 
 %start programa
@@ -93,13 +98,13 @@ comando
     ;
 
 declaracao
-    : INVOCAR ID "como" tipo "com" expressao PONTO_VIRGULA {
+    : INVOCAR ID COMO tipo COM expressao PONTO_VIRGULA {
         declarar($2, $4, &$6);
     }
-    | INVOCAR ID "como" tipo "com" STRING PONTO_VIRGULA {
+    | INVOCAR ID COMO tipo COM STRING PONTO_VIRGULA {
         declarar($2, $4, $6);
     }
-    | INVOCAR ID "como" tipo "com" BOOLEANO PONTO_VIRGULA {
+    | INVOCAR ID COMO tipo COM BOOLEANO PONTO_VIRGULA {
         declarar($2, $4, &$6);
     }
     ;
