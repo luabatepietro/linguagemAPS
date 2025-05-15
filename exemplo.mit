@@ -1,0 +1,6 @@
+{
+    invocar energia como poder com 10;
+    proclamar("Começa a lenda de um herói...");
+    energia recebe energia fortificar 2;
+    proclamar("Energia duplicada!");
+}
