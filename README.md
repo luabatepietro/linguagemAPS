@@ -2,7 +2,7 @@
 
 Uma linguagem de programação inspirada na mitologia grega, onde escrever código é também narrar uma nova lenda.
 
-## 🧬 Tipos de Essência
+## Tipos de Essência
 
 | Mitologia | Tipo Tradicional | Significado                        |
 | --------- | ---------------- | ---------------------------------- |
@@ -10,7 +10,7 @@ Uma linguagem de programação inspirada na mitologia grega, onde escrever códi
 | `palavra` | `str`            | Nomeações, mensagens ou invocações |
 | `destino` | `bool`           | Verdades e vontades (sim/não)      |
 
-## 🔮 Comandos Místicos
+## Comandos Místicos
 
 | Palavra        | Equivalente | Função                            |
 |----------------|-------------|-----------------------------------|
@@ -21,7 +21,7 @@ Uma linguagem de programação inspirada na mitologia grega, onde escrever códi
 | `enquanto`     | `while`     | Repetição                         |
 | `consultar_oraculo()` | `input()` | Entrada do usuário         |
 
-## ⚔️ Operadores Mitológicos
+## Operadores Mitológicos
 
 | Palavra        | Símbolo | Significado                     |
 |----------------|---------|---------------------------------|
@@ -34,7 +34,7 @@ Uma linguagem de programação inspirada na mitologia grega, onde escrever códi
 | `e`            | `&&`    | conjunção lógica                |
 | `ou`           | `||`    | disjunção lógica                |
 
-## 📜 Exemplo de Código
+## Exemplo de Código
 
 ```myth
 {
