@@ -1,0 +1,24 @@
+{
+    proclamar("Iniciando a lenda...");
+
+    invocar energia como poder com 5;
+    invocar nome_heroi como palavra com "Elyan";
+    invocar coragem como destino com verdadeiro;
+
+    proclamar(energia);
+    proclamar(nome_heroi);
+
+    se (energia supera 3 e coragem) {
+        proclamar("Herói digno!");
+        energia recebe energia fortificar 2;
+    } senao {
+        proclamar("Força insuficiente.");
+    }
+
+    enquanto (energia cede 20) {
+        proclamar("Treinando...");
+        energia recebe energia unir 3;
+    }
+
+    proclamar("Jornada completa.");
+}
