@@ -1,11 +1,6 @@
-# === main.py ===
-# Complete compiler for the Myth (Mitologia) Language
-# Includes Tokenizer, Parser, AST Nodes, Evaluation and LLVM IR Generation
-
 import sys
 import os
 
-# === Step 1: Code Generation ===
 class Code:
     def __init__(self):
         self.instructions = []
@@ -37,7 +32,6 @@ class Code:
             f.write("}\n")
 
 
-# === Step 2: Symbol Table ===
 class SymbolTable:
     def __init__(self):
         self.table = {}
@@ -64,7 +58,6 @@ class SymbolTable:
         return self.table[name]["type"]
 
 
-# === Step 3: Tokenizer ===
 class Token:
     def __init__(self, type_, value):
         self.type = type_
@@ -159,8 +152,6 @@ class Tokenizer:
             raise Exception(f"Caractere inesperado: {char}")
 
 
-# === Step 4: Nodes and AST — Will be continued in next message ===
-# === Continuation: AST Node Classes ===
 
 class Node:
     current_id = 0
@@ -275,8 +266,6 @@ class VarDec(Node):
 
 
 
-# === More AST node classes will be added next ===
-# === Remaining AST Node Classes ===
 
 class Assignment(Node):
     def __init__(self, children):
@@ -534,10 +523,6 @@ class NoOp(Node):
         return []
 
 
-# === Ready to parse and compile Myth programs ===
-
-# === Final Part: Parser ===
-
 class Parser:
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
@@ -629,33 +614,24 @@ class Parser:
 
     def parse_statement(self):
         token = self.tokenizer.next
-        print(f"[DEBUG] Próximo token: {self.tokenizer.next.type} ({self.tokenizer.next.value})")
 
         if token.type == "INVOCAR":
             self.tokenizer.select_next()
-            print("DEBUG: esperando ID")
             name = self.tokenizer.next.value
             self.expect("ID")
 
-            print("DEBUG: esperando COMO")
             self.expect("COMO")
 
-            print("DEBUG: esperando TIPO")
-            print(f"TOKEN ATUAL: {self.tokenizer.next.type} ({self.tokenizer.next.value})")
             tipo = self.tokenizer.next.value
             self.expect("TIPO")
             
-            print("DEBUG: esperando COM")
             self.expect("COM")
 
-            print("DEBUG: lendo expressão")
             expr = self.parse_logic()
             
-            print("DEBUG: esperando ;")
             self.expect("SEMI")
 
             node = VarDec([Identifier(name), tipo, expr])
-            print("DEBUG VarDec filhos:", node.children)
             return node
 
         elif token.type == "ID":
@@ -672,7 +648,6 @@ class Parser:
 
             if self.tokenizer.next.type in ["ID", "NUM", "STR", "BOOL", "CONSULTAR", "OP", "LPAREN"]:
                 expr = self.parse_logic()
-                print("DEBUG Print filhos:", expr)
             else:
                 raise Exception(f"Esperado expressão dentro de proclamar, encontrado: {self.tokenizer.next.type} ({self.tokenizer.next.value})")
 
@@ -716,7 +691,6 @@ class Parser:
             return Block(statements)
 
 
-# === Execution Entry Point ===
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Uso: python3 main.py arquivo.mit")
@@ -730,11 +704,9 @@ if __name__ == "__main__":
     parser = Parser(tokenizer)
     ast = parser.parse()
 
-    # Avaliação sem conflitos de declaração
     eval_st = SymbolTable()
     ast.Evaluate(eval_st)
 
-    # Geração com nova symbol table
     gen_st = SymbolTable()
     code = Code()
     generated = ast.Generate(gen_st)
@@ -744,4 +716,4 @@ if __name__ == "__main__":
     code.append(generated)
     code.dump(filename)
 
-    print(f"✅ LLVM IR gerado com sucesso: {filename.replace('.mit', '.ll')}")
+    print(f"LLVM IR gerado com sucesso: {filename.replace('.mit', '.ll')}")
