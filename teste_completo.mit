@@ -1,0 +1,23 @@
+invocar a como poder com 10;
+invocar b como poder com 20;
+invocar soma como poder com a unir b;
+
+invocar texto como palavra com consultar_oraculo();
+invocar resultado como palavra com texto concatena "!";
+proclamar(resultado);
+
+invocar condicao como destino com verdadeiro;
+se (condicao) {
+  proclamar("Condição era verdadeira");
+} senao {
+  proclamar("Condição era falsa");
+}
+
+invocar i como poder com 0;
+enquanto (i cede 5) {
+  proclamar(i);
+  i recebe i unir 1;
+}
+
+invocar verdade como destino com verdadeiro;
+proclamar(nao verdade);

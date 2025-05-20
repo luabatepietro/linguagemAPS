@@ -1,8 +1,11 @@
+# === main.py ===
+# Complete compiler for the Myth (Mitologia) Language
+# Includes Tokenizer, Parser, AST Nodes, Evaluation and LLVM IR Generation
+
 import sys
 import os
-import re
 
-# === Code: responsável por armazenar e gerar LLVM IR ===
+# === Step 1: Code Generation ===
 class Code:
     def __init__(self):
         self.instructions = []
@@ -15,7 +18,6 @@ class Code:
 
     def dump(self, input_filename="output.mit"):
         output_name = os.path.splitext(input_filename)[0] + ".ll"
-
         with open(output_name, "w") as f:
             f.write("; === LLVM IR Module ===\n")
             f.write('@.int_print_fmt = private unnamed_addr constant [4 x i8] c"%d\\0A\\00"\n')
@@ -29,18 +31,17 @@ class Code:
             f.write('declare i8* @strcpy(i8*, i8*)\n')
             f.write('declare i8* @strcat(i8*, i8*)\n')
             f.write('define i32 @main() {\n')
-
             for instr in self.instructions:
                 f.write("  " + instr + "\n")
-
             f.write("  ret i32 0\n")
             f.write("}\n")
 
 
-# === SymbolTable: armazena declarações e valores ===
+# === Step 2: Symbol Table ===
 class SymbolTable:
     def __init__(self):
         self.table = {}
+        self.expecting_type = None
 
     def declare(self, name, type_):
         if name in self.table:
@@ -63,455 +64,12 @@ class SymbolTable:
         return self.table[name]["type"]
 
 
-# === Base para todos os nós da AST ===
-class Node:
-    current_id = 0
-
-    def __init__(self, value=None, children=None):
-        self.value = value
-        self.children = children or []
-        self.id = Node.current_id
-        Node.current_id += 1
-
-    def Evaluate(self, symbol_table):
-        raise NotImplementedError
-
-    def Generate(self, symbol_table):
-        raise NotImplementedError
-
-# === IntVal: representa valores inteiros ===
-class IntVal(Node):
-    def Evaluate(self, symbol_table):
-        return self.value, "poder"
-
-    def Generate(self, symbol_table):
-        temp = f"%int_{self.id}"
-        return [f"{temp} = add i32 0, {self.value}"]
-
-
-# === BoolVal: representa verdadeiro/falso ===
-class BoolVal(Node):
-    def Evaluate(self, symbol_table):
-        val = 1 if self.value == "verdadeiro" else 0
-        return val, "destino"
-
-    def Generate(self, symbol_table):
-        temp = f"%bool_{self.id}"
-        val = "1" if self.value == "verdadeiro" else "0"
-        return [f"{temp} = icmp eq i1 {val}, 1"]
-
-
-# === StrVal: representa texto ===
-class StrVal(Node):
-    def Evaluate(self, symbol_table):
-        return self.value, "palavra"
-
-    def Generate(self, symbol_table):
-        temp = f"%str_{self.id}"
-        string_constant = f"@.str_{self.id}"
-        length = len(self.value) + 1
-        code = [
-            f'{string_constant} = private unnamed_addr constant [{length} x i8] c"{self.value}\\00"',
-            f'{temp} = getelementptr inbounds [{length} x i8], [{length} x i8]* {string_constant}, i32 0, i32 0'
-        ]
-        return code
-
-
-# === Identifier: acesso a variáveis já declaradas ===
-class Identifier(Node):
-    def Evaluate(self, symbol_table):
-        return symbol_table.get(self.value), symbol_table.get_type(self.value)
-
-    def Generate(self, symbol_table):
-        var_type = symbol_table.get_type(self.value)
-        temp = f"%{self.id}"
-        if var_type in ["poder", "destino"]:
-            return [f"{temp} = load i32, i32* @{self.value}"]
-        elif var_type == "palavra":
-            return [f"{temp} = load i8*, i8** @{self.value}"]
-        else:
-            raise Exception(f"Tipo não suportado: {var_type}")
-
-
-
-# === VarDec: invocar ... como ... com ... ===
-class VarDec(Node):
-    def Evaluate(self, symbol_table):
-        name = self.children[0].value
-        type_ = self.children[1]
-        expr = self.children[2] if len(self.children) > 2 else None
-
-        symbol_table.declare(name, type_)
-        if expr:
-            value, vtype = expr.Evaluate(symbol_table)
-            if vtype != type_:
-                raise Exception(f"Tipo incompatível em {name}: esperado {type_}, recebido {vtype}")
-            symbol_table.set(name, value)
-            return value, type_
-        return None, type_
-
-    def Generate(self, symbol_table):
-        name = self.children[0].value
-        type_ = self.children[1]
-        expr = self.children[2] if len(self.children) > 2 else None
-        code = []
-
-        if type_ == "poder" or type_ == "destino":
-            code.append(f"@{name} = global i32 0")
-        elif type_ == "palavra":
-            code.append(f"@{name} = global i8* null")
-        else:
-            raise Exception(f"Tipo inválido: {type_}")
-
-        symbol_table.declare(name, type_)
-
-        if expr:
-            # Define tipo esperado para leitura
-            symbol_table.expecting_type = type_
-
-            expr_code = expr.Generate(symbol_table)
-            code.extend(expr_code)
-
-            symbol_table.expecting_type = None
-
-            temp = f"%{expr.id}" if isinstance(expr, Identifier) else f"%temp_{expr.id}"
-            if type_ == "palavra":
-                code.append(f"store i8* {temp}, i8** @{name}")
-            else:
-                code.append(f"store i32 {temp}, i32* @{name}")
-            symbol_table.set(name, "init")
-
-        return code
-
-
-
-# === Assignment: nome recebe expressao ===
-class Assignment(Node):
-    def Evaluate(self, symbol_table):
-        name = self.children[0].value
-        expr = self.children[1]
-        value, vtype = expr.Evaluate(symbol_table)
-
-        expected_type = symbol_table.get_type(name)
-        if vtype != expected_type:
-            raise Exception(f"Tipo incompatível em atribuição: variável '{name}' espera '{expected_type}', mas recebeu '{vtype}'")
-
-        symbol_table.set(name, value)
-        return value, vtype
-
-    def Generate(self, symbol_table):
-        name = self.children[0].value
-        expr = self.children[1]
-        var_type = symbol_table.get_type(name)
-
-        symbol_table.expecting_type = var_type
-        expr_code = expr.Generate(symbol_table)
-        symbol_table.expecting_type = None
-
-        code = expr_code
-        temp = f"%{expr.id}" if isinstance(expr, Identifier) else f"%temp_{expr.id}"
-
-        if var_type == "palavra":
-            code.append(f"store i8* {temp}, i8** @{name}")
-        else:
-            code.append(f"store i32 {temp}, i32* @{name}")
-
-        symbol_table.set(name, "init")
-        return code
-
-
-# === BinOp: operações binárias ===
-class BinOp(Node):
-    def Evaluate(self, symbol_table):
-        left_val, left_type = self.children[0].Evaluate(symbol_table)
-        right_val, right_type = self.children[1].Evaluate(symbol_table)
-
-        if self.value in ["unir", "separar", "fortificar", "enfraquecer"]:
-            if left_type != "poder" or right_type != "poder":
-                raise Exception("Operações aritméticas requerem tipo 'poder'")
-            if self.value == "unir":
-                return left_val + right_val, "poder"
-            elif self.value == "separar":
-                return left_val - right_val, "poder"
-            elif self.value == "fortificar":
-                return left_val * right_val, "poder"
-            elif self.value == "enfraquecer":
-                return left_val // right_val, "poder"
-
-        elif self.value in ["supera", "cede", "igual", "diferente"]:
-            if left_type != right_type:
-                raise Exception("Comparação requer operandos do mesmo tipo")
-            if self.value == "supera":
-                return int(left_val > right_val), "destino"
-            elif self.value == "cede":
-                return int(left_val < right_val), "destino"
-            elif self.value == "igual":
-                return int(left_val == right_val), "destino"
-            elif self.value == "diferente":
-                return int(left_val != right_val), "destino"
-
-        elif self.value in ["e", "ou"]:
-            if left_type != "destino" or right_type != "destino":
-                raise Exception("Lógicos requerem 'destino'")
-            if self.value == "e":
-                return int(left_val and right_val), "destino"
-            elif self.value == "ou":
-                return int(left_val or right_val), "destino"
-
-        elif self.value == "concatena":
-            return str(left_val) + str(right_val), "palavra"
-
-        else:
-            raise Exception(f"Operador inválido: {self.value}")
-
-    def Generate(self, symbol_table):
-        code = []
-        code += self.children[0].Generate(symbol_table)
-        code += self.children[1].Generate(symbol_table)
-
-        left_temp = f"%{self.children[0].id}" if isinstance(self.children[0], Identifier) else f"%temp_{self.children[0].id}"
-        right_temp = f"%{self.children[1].id}" if isinstance(self.children[1], Identifier) else f"%temp_{self.children[1].id}"
-        result = f"%temp_{self.id}"
-
-        if self.value == "unir":
-            code.append(f"{result} = add i32 {left_temp}, {right_temp}")
-        elif self.value == "separar":
-            code.append(f"{result} = sub i32 {left_temp}, {right_temp}")
-        elif self.value == "fortificar":
-            code.append(f"{result} = mul i32 {left_temp}, {right_temp}")
-        elif self.value == "enfraquecer":
-            code.append(f"{result} = sdiv i32 {left_temp}, {right_temp}")
-        elif self.value == "supera":
-            code.append(f"{result} = icmp sgt i32 {left_temp}, {right_temp}")
-        elif self.value == "cede":
-            code.append(f"{result} = icmp slt i32 {left_temp}, {right_temp}")
-        elif self.value == "igual":
-            code.append(f"{result} = icmp eq i32 {left_temp}, {right_temp}")
-        elif self.value == "diferente":
-            code.append(f"{result} = icmp ne i32 {left_temp}, {right_temp}")
-        elif self.value == "e":
-            code.append(f"{result} = and i1 {left_temp}, {right_temp}")
-        elif self.value == "ou":
-            code.append(f"{result} = or i1 {left_temp}, {right_temp}")
-        elif self.value == "concatena":
-            malloc_var = f"%malloc_{self.id}"
-            strcat1 = f"%strcat1_{self.id}"
-            strcat2 = f"%strcat2_{self.id}"
-            code.append(f"{malloc_var} = call i8* @malloc(i64 256)")
-            code.append(f"{strcat1} = call i8* @strcat(i8* {malloc_var}, i8* {left_temp})")
-            code.append(f"{strcat2} = call i8* @strcat(i8* {strcat1}, i8* {right_temp})")
-            code.append(f"{result} = bitcast i8* {strcat2} to i8*")
-        else:
-            raise Exception(f"Operador binário desconhecido: {self.value}")
-
-        return code
-
-
-# === UnOp: operadores unários (+, -, nao) ===
-class UnOp(Node):
-    def Evaluate(self, symbol_table):
-        value, vtype = self.children[0].Evaluate(symbol_table)
-        if self.value == "nao":
-            if vtype != "destino":
-                raise Exception("nao requer destino")
-            return int(not value), "destino"
-        elif self.value == "mais":
-            return +value, vtype
-        elif self.value == "menos":
-            return -value, vtype
-        else:
-            raise Exception("Operador unário inválido")
-
-    def Generate(self, symbol_table):
-        code = self.children[0].Generate(symbol_table)
-        operand = f"%{self.children[0].id}" if isinstance(self.children[0], Identifier) else f"%temp_{self.children[0].id}"
-        result = f"%temp_{self.id}"
-
-        if self.value == "nao":
-            code.append(f"{result} = xor i1 {operand}, true")
-        elif self.value == "mais":
-            code.append(f"{result} = add i32 0, {operand}")
-        elif self.value == "menos":
-            code.append(f"{result} = sub i32 0, {operand}")
-        else:
-            raise Exception("Operador unário desconhecido")
-
-        return code
-
-# === Print: proclamar(expr) ===
-class Print(Node):
-    def Evaluate(self, symbol_table):
-        if not self.children or len(self.children) != 1:
-            print(f"[ERRO DEBUG] Print.children = {self.children}")
-            raise Exception("Print sem filhos ou com número inválido de filhos!")
-        val, vtype = self.children[0].Evaluate(symbol_table)
-        print(val if vtype != "destino" else ("verdadeiro" if val else "falso"))
-        return val, vtype
-
-    def Generate(self, symbol_table):
-        code = self.children[0].Generate(symbol_table)
-        result = f"%{self.children[0].id}" if isinstance(self.children[0], Identifier) else f"%temp_{self.children[0].id}"
-        call = f"%call_{self.id}"
-        vtype = symbol_table.get_type(self.children[0].value) if isinstance(self.children[0], Identifier) else self.children[0].Evaluate(symbol_table)[1]
-
-        if vtype == "poder":
-            code.append(f"{call} = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.int_print_fmt, i32 0, i32 0), i32 {result})")
-        elif vtype == "destino":
-            ptr = f"%bool_ptr_{self.id}"
-            code.append(f"{ptr} = select i1 {result}, i8* @.true_str, i8* @.false_str")
-            code.append(f"{call} = call i32 (i8*, ...) @printf(i8* {ptr})")
-        elif vtype == "palavra":
-            code.append(f"{call} = call i32 (i8*, ...) @printf(i8* {result})")
-        else:
-            raise Exception(f"Tipo inválido em proclamar: {vtype}")
-        return code
-
-
-# === Read: consultar_oraculo() ===
-class Read(Node):
-    def Evaluate(self, symbol_table):
-        raw = input()
-        if raw.isdigit():
-            return int(raw), "poder"
-        elif raw.lower() in ["verdadeiro", "falso"]:
-            return int(raw.lower() == "verdadeiro"), "destino"
-        else:
-            return raw, "palavra"
-
-    def Generate(self, symbol_table):
-        result = f"%temp_{self.id}"
-        ptr = f"%ptr_{self.id}"
-        code = []
-
-        expected = getattr(symbol_table, "expecting_type", "palavra")
-
-        if expected == "poder":
-            code += [
-                f"{ptr} = alloca i32",
-                f"%scan_{self.id} = call i32 (i8*, ...) @scanf(i8* @.int_read_fmt, i32* {ptr})",
-                f"{result} = load i32, i32* {ptr}"
-            ]
-        elif expected == "palavra":
-            code += [
-                f"{ptr} = alloca [256 x i8]",
-                f"%gep_{self.id} = getelementptr inbounds [256 x i8], [256 x i8]* {ptr}, i32 0, i32 0",
-                f"%scan_{self.id} = call i32 (i8*, ...) @scanf(i8* @.str_read_fmt, i8* %gep_{self.id})",
-                f"{result} = add i8* %gep_{self.id}, 0"
-            ]
-        else:
-            raise Exception("Tipo não suportado em consultar_oraculo")
-        return code
-
-
-
-# === If: se (...) { ... } senao { ... } ===
-class If(Node):
-    def Evaluate(self, symbol_table):
-        cond, t = self.children[0].Evaluate(symbol_table)
-        if t != "destino":
-            raise Exception("Condição de se deve ser destino")
-        if cond:
-            return self.children[1].Evaluate(symbol_table)
-        elif len(self.children) > 2:
-            return self.children[2].Evaluate(symbol_table)
-        return None, None
-
-    def Generate(self, symbol_table):
-        code = self.children[0].Generate(symbol_table)
-        cond = f"%temp_{self.children[0].id}"
-        then_label = f"if_then_{self.id}"
-        else_label = f"if_else_{self.id}"
-        end_label = f"if_end_{self.id}"
-
-        if len(self.children) == 3:
-            code.append(f"br i1 {cond}, label %{then_label}, label %{else_label}")
-            code.append(f"{then_label}:")
-            code += self.children[1].Generate(symbol_table)
-            code.append(f"br label %{end_label}")
-            code.append(f"{else_label}:")
-            code += self.children[2].Generate(symbol_table)
-            code.append(f"br label %{end_label}")
-        else:
-            code.append(f"br i1 {cond}, label %{then_label}, label %{end_label}")
-            code.append(f"{then_label}:")
-            code += self.children[1].Generate(symbol_table)
-            code.append(f"br label %{end_label}")
-        code.append(f"{end_label}:")
-        return code
-
-
-# === While: enquanto (...) { ... } ===
-class While(Node):
-    def Evaluate(self, symbol_table):
-        val, typ = self.children[0].Evaluate(symbol_table)
-        while val:
-            self.children[1].Evaluate(symbol_table)
-            val, _ = self.children[0].Evaluate(symbol_table)
-        return None, None
-
-    def Generate(self, symbol_table):
-        code = []
-        cond_label = f"while_cond_{self.id}"
-        body_label = f"while_body_{self.id}"
-        end_label = f"while_end_{self.id}"
-
-        code.append(f"br label %{cond_label}")
-        code.append(f"{cond_label}:")
-        code += self.children[0].Generate(symbol_table)
-        cond = f"%temp_{self.children[0].id}"
-        code.append(f"br i1 {cond}, label %{body_label}, label %{end_label}")
-        code.append(f"{body_label}:")
-        code += self.children[1].Generate(symbol_table)
-        code.append(f"br label %{cond_label}")
-        code.append(f"{end_label}:")
-        return code
-
-
-# === Block: conjunto de comandos ===
-class Block(Node):
-    def __init__(self, children):
-        super().__init__(None, children)
-
-    def Evaluate(self, symbol_table):
-        print(f"[DEBUG] Block.Evaluate com {len(self.children)} filhos")
-        for child in self.children:
-            print(f"[DEBUG] Avaliando filho: {type(child).__name__}")
-            child.Evaluate(symbol_table)
-        return None, None
-
-
-    def Generate(self, symbol_table):
-        code = []
-        if not self.children:
-            print("[DEBUG] Block sem filhos!")
-        else:
-            print(f"[DEBUG] Block com {len(self.children)} filhos")
-            for child in self.children:
-                print(f"[DEBUG] Gerando código para: {type(child).__name__}")
-                generated = child.Generate(symbol_table)
-                if generated:
-                    code += generated
-        return code
-
-
-
-
-# === NoOp: instrução vazia ===
-class NoOp(Node):
-    def Evaluate(self, symbol_table):
-        return None, None
-
-    def Generate(self, symbol_table):
-        return []
-
-# === Token: representa tipo e valor ===
+# === Step 3: Tokenizer ===
 class Token:
     def __init__(self, type_, value):
         self.type = type_
         self.value = value
 
-
-# === Tokenizer: quebra o código fonte em tokens ===
 class Tokenizer:
     def __init__(self, source):
         self.source = source
@@ -541,11 +99,13 @@ class Tokenizer:
             "e": "OP",
             "ou": "OP",
             "nao": "OP",
+            "bencao": "OP",
+            "maldicao": "OP",
+            "concatena": "OP",
             "verdadeiro": "BOOL",
             "falso": "BOOL"
         }
-        self.select_next()  # ✅ Isso precisa estar aqui
-
+        self.select_next()
 
     def select_next(self):
         while self.position < len(self.source) and self.source[self.position] in " \n\t\r":
@@ -599,10 +159,393 @@ class Tokenizer:
             raise Exception(f"Caractere inesperado: {char}")
 
 
-# === Parser: monta a árvore sintática (AST) ===
+# === Step 4: Nodes and AST — Will be continued in next message ===
+# === Continuation: AST Node Classes ===
+
+class Node:
+    current_id = 0
+
+    def __init__(self, value=None, children=None):
+        self.value = value
+        self.children = children or []
+        self.id = Node.current_id
+        Node.current_id += 1
+
+    def Evaluate(self, symbol_table):
+        raise NotImplementedError
+
+    def Generate(self, symbol_table):
+        raise NotImplementedError
+
+
+class IntVal(Node):
+    def Evaluate(self, symbol_table):
+        return self.value, "poder"
+
+    def Generate(self, symbol_table):
+        return [f"%temp_{self.id} = add i32 0, {self.value}"]
+
+
+class BoolVal(Node):
+    def Evaluate(self, symbol_table):
+        val = 1 if self.value == "verdadeiro" else 0
+        return val, "destino"
+
+    def Generate(self, symbol_table):
+        val = 1 if self.value == "verdadeiro" else 0
+        return [f"%temp_{self.id} = add i1 0, {val}"]
+
+
+class StrVal(Node):
+    def Evaluate(self, symbol_table):
+        return self.value, "palavra"
+
+    def Generate(self, symbol_table):
+        string_constant = f"@.str_{self.id}"
+        length = len(self.value) + 1
+        return [
+            f'{string_constant} = private unnamed_addr constant [{length} x i8] c"{self.value}\\00"',
+            f'%temp_{self.id} = getelementptr inbounds [{length} x i8], [{length} x i8]* {string_constant}, i32 0, i32 0'
+        ]
+
+
+class Identifier(Node):
+    def Evaluate(self, symbol_table):
+        return symbol_table.get(self.value), symbol_table.get_type(self.value)
+
+    def Generate(self, symbol_table):
+        var_type = symbol_table.get_type(self.value)
+        temp = f"%{self.id}"
+        if var_type in ["poder", "destino"]:
+            return [f"{temp} = load i32, i32* @{self.value}"]
+        elif var_type == "palavra":
+            return [f"{temp} = load i8*, i8** @{self.value}"]
+        else:
+            raise Exception(f"Tipo não suportado: {var_type}")
+
+
+class VarDec(Node):
+    def __init__(self, children):
+        super().__init__(None, children) 
+
+    def Evaluate(self, symbol_table):
+        if len(self.children) < 2:
+            raise Exception(f"Erro interno: declaração de variável malformada (esperado pelo menos 2 filhos, recebeu {len(self.children)})")
+        name = self.children[0].value
+        type_ = self.children[1]
+        expr = self.children[2] if len(self.children) > 2 else None
+
+        symbol_table.declare(name, type_)
+        if expr:
+            value, vtype = expr.Evaluate(symbol_table)
+            if vtype != type_:
+                raise Exception(f"Tipo incompatível em {name}: esperado {type_}, recebido {vtype}")
+            symbol_table.set(name, value)
+            return value, type_
+        return None, type_
+
+    def Generate(self, symbol_table):
+        name = self.children[0].value
+        type_ = self.children[1]
+        expr = self.children[2] if len(self.children) > 2 else None
+        code = []
+
+        if type_ == "poder" or type_ == "destino":
+            code.append(f"@{name} = global i32 0")
+        elif type_ == "palavra":
+            code.append(f"@{name} = global i8* null")
+        else:
+            raise Exception(f"Tipo inválido: {type_}")
+
+        symbol_table.declare(name, type_)
+
+        if expr:
+            symbol_table.expecting_type = type_
+            expr_code = expr.Generate(symbol_table)
+            code.extend(expr_code)
+            symbol_table.expecting_type = None
+            temp = f"%{expr.id}" if isinstance(expr, Identifier) else f"%temp_{expr.id}"
+            if type_ == "palavra":
+                code.append(f"store i8* {temp}, i8** @{name}")
+            else:
+                code.append(f"store i32 {temp}, i32* @{name}")
+            symbol_table.set(name, "init")
+
+        return code
+
+
+
+# === More AST node classes will be added next ===
+# === Remaining AST Node Classes ===
+
+class Assignment(Node):
+    def __init__(self, children):
+        super().__init__(None, children)
+
+    def Evaluate(self, symbol_table):
+        name = self.children[0].value
+        expr = self.children[1]
+        value, vtype = expr.Evaluate(symbol_table)
+        expected_type = symbol_table.get_type(name)
+        if vtype != expected_type:
+            raise Exception(f"Tipo incompatível: variável '{name}' espera '{expected_type}', mas recebeu '{vtype}'")
+        symbol_table.set(name, value)
+        return value, vtype
+
+    def Generate(self, symbol_table):
+        name = self.children[0].value
+        expr = self.children[1]
+        var_type = symbol_table.get_type(name)
+        symbol_table.expecting_type = var_type
+        code = expr.Generate(symbol_table)
+        symbol_table.expecting_type = None
+        temp = f"%{expr.id}" if isinstance(expr, Identifier) else f"%temp_{expr.id}"
+        if var_type == "palavra":
+            code.append(f"store i8* {temp}, i8** @{name}")
+        else:
+            code.append(f"store i32 {temp}, i32* @{name}")
+        symbol_table.set(name, "init")
+        return code
+
+
+class BinOp(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def Evaluate(self, symbol_table):
+        lval, ltype = self.children[0].Evaluate(symbol_table)
+        rval, rtype = self.children[1].Evaluate(symbol_table)
+        op = self.value
+
+        if op in ["unir", "separar", "fortificar", "enfraquecer"]:
+            if ltype == rtype == "poder":
+                if op == "unir": return lval + rval, "poder"
+                if op == "separar": return lval - rval, "poder"
+                if op == "fortificar": return lval * rval, "poder"
+                if op == "enfraquecer": return lval // rval, "poder"
+
+        elif op in ["supera", "cede", "igual", "diferente"]:
+            if ltype != rtype:
+                raise Exception("Comparação requer tipos iguais")
+            if op == "supera": return int(lval > rval), "destino"
+            if op == "cede": return int(lval < rval), "destino"
+            if op == "igual": return int(lval == rval), "destino"
+            if op == "diferente": return int(lval != rval), "destino"
+
+        elif op in ["e", "ou"]:
+            if ltype == rtype == "destino":
+                if op == "e": return int(lval and rval), "destino"
+                if op == "ou": return int(lval or rval), "destino"
+
+        elif op == "concatena":
+            return str(lval) + str(rval), "palavra"
+
+        raise Exception(f"Operador inválido: {op}")
+
+    def Generate(self, symbol_table):
+        code = self.children[0].Generate(symbol_table) + self.children[1].Generate(symbol_table)
+        ltemp = f"%{self.children[0].id}" if isinstance(self.children[0], Identifier) else f"%temp_{self.children[0].id}"
+        rtemp = f"%{self.children[1].id}" if isinstance(self.children[1], Identifier) else f"%temp_{self.children[1].id}"
+        result = f"%temp_{self.id}"
+        op = self.value
+
+        if op == "unir": code.append(f"{result} = add i32 {ltemp}, {rtemp}")
+        elif op == "separar": code.append(f"{result} = sub i32 {ltemp}, {rtemp}")
+        elif op == "fortificar": code.append(f"{result} = mul i32 {ltemp}, {rtemp}")
+        elif op == "enfraquecer": code.append(f"{result} = sdiv i32 {ltemp}, {rtemp}")
+        elif op == "supera": code.append(f"{result} = icmp sgt i32 {ltemp}, {rtemp}")
+        elif op == "cede": code.append(f"{result} = icmp slt i32 {ltemp}, {rtemp}")
+        elif op == "igual": code.append(f"{result} = icmp eq i32 {ltemp}, {rtemp}")
+        elif op == "diferente": code.append(f"{result} = icmp ne i32 {ltemp}, {rtemp}")
+        elif op == "e": code.append(f"{result} = and i1 {ltemp}, {rtemp}")
+        elif op == "ou": code.append(f"{result} = or i1 {ltemp}, {rtemp}")
+        elif op == "concatena":
+            malloc_var = f"%malloc_{self.id}"
+            strcat1 = f"%strcat1_{self.id}"
+            strcat2 = f"%strcat2_{self.id}"
+            code.append(f"{malloc_var} = call i8* @malloc(i64 256)")
+            code.append(f"{strcat1} = call i8* @strcat(i8* {malloc_var}, i8* {ltemp})")
+            code.append(f"{strcat2} = call i8* @strcat(i8* {strcat1}, i8* {rtemp})")
+            code.append(f"{result} = bitcast i8* {strcat2} to i8*")
+        else:
+            raise Exception(f"Operador binário desconhecido: {op}")
+
+        return code
+
+
+class UnOp(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def Evaluate(self, symbol_table):
+        val, vtype = self.children[0].Evaluate(symbol_table)
+        if self.value in ["nao"]:
+            if vtype != "destino": raise Exception("'nao' requer destino")
+            return int(not val), "destino"
+        elif self.value in ["mais", "bencao"]:
+            return +val, vtype
+        elif self.value in ["menos", "maldicao"]:
+            return -val, vtype
+        raise Exception("Operador unário inválido")
+
+    def Generate(self, symbol_table):
+        code = self.children[0].Generate(symbol_table)
+        operand = f"%{self.children[0].id}" if isinstance(self.children[0], Identifier) else f"%temp_{self.children[0].id}"
+        result = f"%temp_{self.id}"
+        if self.value == "nao":
+            code.append(f"{result} = xor i1 {operand}, true")
+        elif self.value in ["mais", "bencao"]:
+            code.append(f"{result} = add i32 0, {operand}")
+        elif self.value in ["menos", "maldicao"]:
+            code.append(f"{result} = sub i32 0, {operand}")
+        else:
+            raise Exception("Operador unário desconhecido")
+        return code
+
+
+class Print(Node):
+    def __init__(self, children):
+        super().__init__(None, children)
+
+    def Evaluate(self, symbol_table):
+        val, vtype = self.children[0].Evaluate(symbol_table)
+        print(val if vtype != "destino" else ("verdadeiro" if val else "falso"))
+        return val, vtype
+
+    def Generate(self, symbol_table):
+        expr = self.children[0]
+        code = expr.Generate(symbol_table)
+        result = f"%{expr.id}" if isinstance(expr, Identifier) else f"%temp_{expr.id}"
+        call = f"%call_{self.id}"
+        vtype = symbol_table.get_type(expr.value) if isinstance(expr, Identifier) else expr.Evaluate(symbol_table)[1]
+        if vtype == "poder":
+            code.append(f"{call} = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.int_print_fmt, i32 0, i32 0), i32 {result})")
+        elif vtype == "destino":
+            ptr = f"%bool_ptr_{self.id}"
+            code.append(f"{ptr} = select i1 {result}, i8* @.true_str, i8* @.false_str")
+            code.append(f"{call} = call i32 (i8*, ...) @printf(i8* {ptr})")
+        elif vtype == "palavra":
+            code.append(f"{call} = call i32 (i8*, ...) @printf(i8* {result})")
+        else:
+            raise Exception(f"Tipo inválido em proclamar: {vtype}")
+        return code
+
+
+class Read(Node):
+    def Evaluate(self, symbol_table):
+        raw = input()
+        if raw.isdigit(): return int(raw), "poder"
+        if raw.lower() in ["verdadeiro", "falso"]: return int(raw.lower() == "verdadeiro"), "destino"
+        return raw, "palavra"
+
+    def Generate(self, symbol_table):
+        result = f"%temp_{self.id}"
+        ptr = f"%ptr_{self.id}"
+        code = []
+        expected = getattr(symbol_table, "expecting_type", "palavra")
+        if expected == "poder":
+            code += [
+                f"{ptr} = alloca i32",
+                f"%scan_{self.id} = call i32 (i8*, ...) @scanf(i8* @.int_read_fmt, i32* {ptr})",
+                f"{result} = load i32, i32* {ptr}"
+            ]
+        elif expected == "palavra":
+            code += [
+                f"{ptr} = alloca [256 x i8]",
+                f"%gep_{self.id} = getelementptr inbounds [256 x i8], [256 x i8]* {ptr}, i32 0, i32 0",
+                f"%scan_{self.id} = call i32 (i8*, ...) @scanf(i8* @.str_read_fmt, i8* %gep_{self.id})",
+                f"{result} = add i8* %gep_{self.id}, 0"
+            ]
+        else:
+            raise Exception("Tipo não suportado em consultar_oraculo")
+        return code
+
+
+class If(Node):
+    def __init__(self, children):
+        super().__init__(None, children)
+
+    def Evaluate(self, symbol_table):
+        cond, t = self.children[0].Evaluate(symbol_table)
+        if t != "destino": raise Exception("Condição de se deve ser destino")
+        return self.children[1].Evaluate(symbol_table) if cond else (self.children[2].Evaluate(symbol_table) if len(self.children) > 2 else (None, None))
+
+    def Generate(self, symbol_table):
+        code = self.children[0].Generate(symbol_table)
+        cond = f"%temp_{self.children[0].id}"
+        then_label = f"if_then_{self.id}"
+        else_label = f"if_else_{self.id}"
+        end_label = f"if_end_{self.id}"
+        if len(self.children) == 3:
+            code += [f"br i1 {cond}, label %{then_label}, label %{else_label}", f"{then_label}:"]
+            code += self.children[1].Generate(symbol_table) + [f"br label %{end_label}", f"{else_label}:"]
+            code += self.children[2].Generate(symbol_table) + [f"br label %{end_label}"]
+        else:
+            code += [f"br i1 {cond}, label %{then_label}, label %{end_label}", f"{then_label}:"]
+            code += self.children[1].Generate(symbol_table) + [f"br label %{end_label}"]
+        code.append(f"{end_label}:")
+        return code
+
+
+class While(Node):
+    def __init__(self, children):
+        super().__init__(None, children)
+
+    def Evaluate(self, symbol_table):
+        while True:
+            cond, typ = self.children[0].Evaluate(symbol_table)
+            if not cond: break
+            self.children[1].Evaluate(symbol_table)
+        return None, None
+
+    def Generate(self, symbol_table):
+        cond_label = f"while_cond_{self.id}"
+        body_label = f"while_body_{self.id}"
+        end_label = f"while_end_{self.id}"
+        code = [f"br label %{cond_label}", f"{cond_label}:"]
+        code += self.children[0].Generate(symbol_table)
+        cond = f"%temp_{self.children[0].id}"
+        code += [f"br i1 {cond}, label %{body_label}, label %{end_label}", f"{body_label}:"]
+        code += self.children[1].Generate(symbol_table) + [f"br label %{cond_label}", f"{end_label}:"]
+        return code
+
+
+class Block(Node):
+    def __init__(self, children):
+        super().__init__(None, children)
+
+    def Evaluate(self, symbol_table):
+        for child in self.children:
+            child.Evaluate(symbol_table)
+        return None, None
+
+    def Generate(self, symbol_table):
+        code = []
+        for child in self.children:
+            code += child.Generate(symbol_table)
+        return code
+
+
+class NoOp(Node):
+    def Evaluate(self, symbol_table):
+        return None, None
+
+    def Generate(self, symbol_table):
+        return []
+
+
+# === Ready to parse and compile Myth programs ===
+
+# === Final Part: Parser ===
+
 class Parser:
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
+
+    def expect(self, type_):
+        if self.tokenizer.next.type != type_:
+            raise Exception(f"Esperado {type_}, encontrado {self.tokenizer.next.type}")
+        self.tokenizer.select_next()
 
     def parse_factor(self):
         token = self.tokenizer.next
@@ -623,13 +566,20 @@ class Parser:
             self.expect("LPAREN")
             self.expect("RPAREN")
             return Read()
-        elif token.type == "OP" and token.value in ["mais", "menos", "nao"]:
+        elif token.type == "OP" and token.value in ["mais", "menos", "nao", "bencao", "maldicao"]:
             op = token.value
             self.tokenizer.select_next()
-            return UnOp(op, self.parse_factor())
+            if self.tokenizer.next.type == "LPAREN":
+                self.tokenizer.select_next()
+                expr = self.parse_logic()
+                self.expect("RPAREN")
+            else:
+                expr = self.parse_factor()
+            return UnOp(op, [expr])
+
         elif token.type == "LPAREN":
             self.tokenizer.select_next()
-            expr = self.parse_expression()
+            expr = self.parse_logic()
             self.expect("RPAREN")
             return expr
         else:
@@ -667,19 +617,47 @@ class Parser:
             node = BinOp(op, [node, self.parse_relational()])
         return node
 
+    def parse_block(self):
+        self.expect("LBRACE")
+        statements = []
+        while self.tokenizer.next.type not in ["RBRACE", "EOF"]:
+            stmt = self.parse_statement()
+            if not isinstance(stmt, NoOp):
+                statements.append(stmt)
+        self.expect("RBRACE")
+        return Block(statements)
+
     def parse_statement(self):
         token = self.tokenizer.next
+        print(f"[DEBUG] Próximo token: {self.tokenizer.next.type} ({self.tokenizer.next.value})")
+
         if token.type == "INVOCAR":
             self.tokenizer.select_next()
+            print("DEBUG: esperando ID")
             name = self.tokenizer.next.value
             self.expect("ID")
+
+            print("DEBUG: esperando COMO")
             self.expect("COMO")
+
+            print("DEBUG: esperando TIPO")
+            print(f"TOKEN ATUAL: {self.tokenizer.next.type} ({self.tokenizer.next.value})")
             tipo = self.tokenizer.next.value
             self.expect("TIPO")
+            
+            print("DEBUG: esperando COM")
             self.expect("COM")
+
+            print("DEBUG: lendo expressão")
             expr = self.parse_logic()
+            
+            print("DEBUG: esperando ;")
             self.expect("SEMI")
-            return VarDec([Identifier(name), tipo, expr])
+
+            node = VarDec([Identifier(name), tipo, expr])
+            print("DEBUG VarDec filhos:", node.children)
+            return node
+
         elif token.type == "ID":
             name = token.value
             self.tokenizer.select_next()
@@ -691,17 +669,17 @@ class Parser:
         elif token.type == "PROCLAMAR":
             self.tokenizer.select_next()
             self.expect("LPAREN")
-            
-            if self.tokenizer.next.type in ["SEMI", "RPAREN"]:
-                raise Exception("Erro de sintaxe: proclamar() sem expressão")
 
-            expr = self.parse_logic()
+            if self.tokenizer.next.type in ["ID", "NUM", "STR", "BOOL", "CONSULTAR", "OP", "LPAREN"]:
+                expr = self.parse_logic()
+                print("DEBUG Print filhos:", expr)
+            else:
+                raise Exception(f"Esperado expressão dentro de proclamar, encontrado: {self.tokenizer.next.type} ({self.tokenizer.next.value})")
+
             self.expect("RPAREN")
             self.expect("SEMI")
-
-            if expr is None:
-                raise Exception("Erro: expressão de proclamar retornou None!")
             return Print([expr])
+
 
         elif token.type == "SE":
             self.tokenizer.select_next()
@@ -714,6 +692,7 @@ class Parser:
                 false_block = self.parse_block()
                 return If([cond, true_block, false_block])
             return If([cond, true_block])
+
         elif token.type == "ENQUANTO":
             self.tokenizer.select_next()
             self.expect("LPAREN")
@@ -721,51 +700,23 @@ class Parser:
             self.expect("RPAREN")
             body = self.parse_block()
             return While([cond, body])
+
         else:
             return NoOp()
 
-    def parse_block(self):
-        self.expect("LBRACE")
-        statements = []
-        while self.tokenizer.next.type not in ["RBRACE", "EOF"]:
-            print(f"[DEBUG] Parsing statement with token: {self.tokenizer.next.type}")
-            stmt = self.parse_statement()
-            print(f"[DEBUG] Nó retornado por parse_statement: {type(stmt).__name__}")
-            if not isinstance(stmt, NoOp):
-                statements.append(stmt)
-        self.expect("RBRACE")
-        print(f"[DEBUG] Total de statements neste bloco: {len(statements)}")
-        return Block(statements)
-
     def parse(self):
         if self.tokenizer.next.type == "LBRACE":
-            block = self.parse_block()
+            return self.parse_block()
         else:
             statements = []
             while self.tokenizer.next.type != "EOF":
                 stmt = self.parse_statement()
                 if not isinstance(stmt, NoOp):
                     statements.append(stmt)
-            block = Block(statements)
-
-        # Consome tokens residuais (ex: espaços, tabs após } )
-        while self.tokenizer.next.type == "SEMI":
-            self.tokenizer.select_next()
-        if self.tokenizer.next.type != "EOF":
-            raise Exception(f"Token inesperado após fim do programa: {self.tokenizer.next.type}")
-
-        return block
+            return Block(statements)
 
 
-
-    def expect(self, type_):
-        if self.tokenizer.next.type != type_:
-            raise Exception(f"Esperado {type_}, encontrado {self.tokenizer.next.type}")
-        self.tokenizer.select_next()
-
-
-
-# === Execução Principal ===
+# === Execution Entry Point ===
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Uso: python3 main.py arquivo.mit")
@@ -776,23 +727,21 @@ if __name__ == "__main__":
         source = f.read()
 
     tokenizer = Tokenizer(source)
-    print(f"[DEBUG] Primeiro token: {tokenizer.next.type}, valor: {tokenizer.next.value}")
-
     parser = Parser(tokenizer)
     ast = parser.parse()
 
-    st = SymbolTable()
-    ast.Evaluate(st)
-    print(f"[DEBUG] AST gerada: {ast}")
+    # Avaliação sem conflitos de declaração
+    eval_st = SymbolTable()
+    ast.Evaluate(eval_st)
 
-
+    # Geração com nova symbol table
+    gen_st = SymbolTable()
     code = Code()
-    print(f"[DEBUG] Total de filhos no bloco: {len(ast.children)}")
-    generated = ast.Generate(st)
+    generated = ast.Generate(gen_st)
+
+
+
     code.append(generated)
-    print("Instruções geradas:")
-    for instr in code.instructions:
-        print(instr)
     code.dump(filename)
 
     print(f"✅ LLVM IR gerado com sucesso: {filename.replace('.mit', '.ll')}")

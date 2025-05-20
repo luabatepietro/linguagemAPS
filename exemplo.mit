@@ -1,23 +1,2 @@
-{
-    proclamar(" Iniciando a jornada...");
-
-    invocar energia como poder com 10;
-    invocar heroi_nome como palavra com "Perseu";
-    invocar vivo como destino com verdadeiro;
-
-    energia recebe energia fortificar 2;
-    proclamar("Energia duplicada!");
-
-    se (energia supera 15) {
-        proclamar("Força lendária reconhecida.");
-    } senao {
-        proclamar("Energia ainda fraca.");
-    }
-
-    enquanto (energia cede 25) {
-        proclamar("Loop: fortalecendo energia...");
-        energia recebe energia unir 2;
-    }
-
-    proclamar("Jornada concluída.");
-}
+invocar texto como palavra com consultar_oraculo();
+proclamar(texto);

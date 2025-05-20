@@ -16,9 +16,9 @@
     }
 
     enquanto (energia cede 20) {
-        proclamar("Treinando...");
+        proclamar("🔁 Treinando...");
         energia recebe energia unir 3;
     }
 
-    proclamar("Jornada completa.");
+    proclamar("🏁 Jornada completa.");
 }
